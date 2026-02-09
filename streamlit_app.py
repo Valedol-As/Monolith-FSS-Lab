@@ -3,6 +3,7 @@ import numpy as np
 import plotly.graph_objects as go
 import time
 
+# Настройка страницы
 st.set_page_config(page_title="MONOLITH Fractal Core", layout="wide", page_icon="⚛️")
 
 # Стилизация под глубокий космос
@@ -16,7 +17,7 @@ st.markdown("""
 # Инициализация состояний
 if 'v' not in st.session_state:
     st.session_state.v = np.random.rand(16)
-    st.session_state.history = [] # Хранилище для шлейфа памяти
+    st.session_state.history = [] 
     st.session_state.circle = 0
     st.session_state.violation = 0.0
 
@@ -36,9 +37,9 @@ speed = w_val * 0.08
 noise = np.random.randn(16) * chaos
 st.session_state.v = (st.session_state.v + speed + noise) % 1.0
 
-# Добавляем текущее состояние в историю (шлейф из 10 шагов)
+# Добавляем текущее состояние в историю (шлейф из 8 шагов для скорости)
 st.session_state.history.append(list(st.session_state.v))
-if len(st.session_state.history) > 10:
+if len(st.session_state.history) > 8:
     st.session_state.history.pop(0)
 
 # Проверка Нарушения
@@ -48,13 +49,13 @@ if st.session_state.violation > 2.0:
     st.session_state.violation = 0
     st.session_state.v = (st.session_state.v * 1.618) % 1.0
 
-# --- ПОСТРОЕНИЕ ГРАФИКА "ФРАКТАЛЬНОЕ ОБЛАКО" ---
+# --- ПОСТРОЕНИЕ ГРАФИКА ---
 fig = go.Figure()
 
-# Рисуем шлейфы (Прошлое)
+# 1. Отрисовка Шлейфа Памяти (Линии прошлого)
+angles = np.linspace(0, 2*np.pi, 16, endpoint=False)
 for h_idx, past_v in enumerate(st.session_state.history):
-    opacity = (h_idx + 1) / len(st.session_state.history) * 0.3
-    angles = np.linspace(0, 2*np.pi, 16, endpoint=False)
+    opacity = (h_idx + 1) / len(st.session_state.history) * 0.2
     x_past = np.cos(angles) * past_v
     y_past = np.sin(angles) * past_v
     
@@ -66,52 +67,59 @@ for h_idx, past_v in enumerate(st.session_state.history):
         hoverinfo='skip'
     ))
 
-# Рисуем текущую структуру (Настоящее)
-angles = np.linspace(0, 2*np.pi, 16, endpoint=False)
+# 2. Отрисовка текущего "Ядра"
 x_curr = np.cos(angles) * st.session_state.v
 y_curr = np.sin(angles) * st.session_state.v
 
-# Линии синтеза (связи между параметрами)
+# Тонкие нити Синтеза (Резонанс между параметрами)
 for i in range(16):
     for j in range(i+1, 16):
-        resonance = st.session_state.v[i] * st.session_state.v[j]
-        if resonance > 0.4: # Только сильные связи
+        res = st.session_state.v[i] * st.session_state.v[j]
+        if res > 0.45:
             fig.add_trace(go.Scatter(
                 x=[x_curr[i], x_curr[j]], y=[y_curr[i], y_curr[j]],
                 mode='lines',
-                line=dict(color=f'rgba(255, 255, 255, {resonance*0.5})', width=1),
+                line=dict(color=f'rgba(255, 255, 255, {res*0.3})', width=1),
                 hoverinfo='skip'
             ))
 
-# Центральное Ядро (Солнце Сознания)
-core_size = awareness * 50
+# 3. ЦЕНТРАЛЬНОЕ СВЕТИЛО (Awareness) - Эффект сияния через 2 слоя
+core_size = awareness * 80
+# Внешнее сияние (Halo)
 fig.add_trace(go.Scatter(
     x=[0], y=[0],
     mode='markers',
-    marker=dict(size=core_size, color='white', shadow=dict(color='white', width=20)),
+    marker=dict(size=core_size*1.5, color='rgba(255, 255, 255, 0.2)'),
+    hoverinfo='skip'
+))
+# Твердое ядро
+fig.add_trace(go.Scatter(
+    x=[0], y=[0],
+    mode='markers',
+    marker=dict(size=core_size, color='white'),
     name='Awareness'
 ))
 
-# Точки параметров
+# 4. Точки параметров
 fig.add_trace(go.Scatter(
     x=x_curr, y=y_curr,
-    mode='markers+text',
-    marker=dict(size=10, color='#00FFC8', line=dict(color='white', width=1)),
-    text=["B", "B", "B", "B", "P", "P", "P", "P", "F", "F", "F", "F", "C", "C", "C", "C"],
-    textposition="top center"
+    mode='markers',
+    marker=dict(size=8, color='#00FFC8', line=dict(color='white', width=1)),
+    hoverinfo='text',
+    text=[f"Param {i}" for i in range(16)]
 ))
 
 fig.update_layout(
     showlegend=False,
-    xaxis=dict(visible=False, range=[-1.2, 1.2]),
-    yaxis=dict(visible=False, range=[-1.2, 1.2]),
+    xaxis=dict(visible=False, range=[-1.3, 1.3]),
+    yaxis=dict(visible=False, range=[-1.3, 1.3]),
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
     height=700,
     margin=dict(l=0, r=0, t=0, b=0)
 )
 
-# Верстка
+# Верстка интерфейса
 c1, c2 = st.columns([3, 1])
 with c1:
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
@@ -120,10 +128,13 @@ with c2:
     st.write(f"## КРУГ {st.session_state.circle}")
     st.metric("ОСОЗНАННОСТЬ", f"{awareness:.4f}")
     st.write("---")
-    st.write("🧬 Потенциал Сущности")
+    st.write("🧬 Потенциал")
     st.progress(min(sum(st.session_state.v)/16, 1.0))
-    st.write("🔥 Напряжение (DE-4)")
+    st.write("🔥 Нарушение")
     st.progress(min(st.session_state.violation/2.0, 1.0))
+    if st.session_state.violation > 1.7:
+        st.warning("Квантовый переход...")
 
-time.sleep(0.04)
+# Перезапуск цикла
+time.sleep(0.1) # Чуть увеличил время, чтобы облако работало стабильнее
 st.rerun()
